@@ -94,6 +94,12 @@ body{text-shadow:0 1px 3px rgba(0,0,0,.75)}input::placeholder{color:rgba(255,255
 #rpn .bt{display:flex;gap:8px;margin-top:10px}#rpn .bt button{flex:1;padding:12px;border-radius:10px;border:1px solid rgba(255,255,255,.4);background:transparent;color:#fff;font:inherit;font-weight:800;cursor:pointer}#rpn .bt .ok{background:#3ecf9f;color:#06241a;border-color:#3ecf9f}
 #rmsg{margin-top:10px;font-size:.88rem;color:#cfe}
 #rtoast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(76px + env(safe-area-inset-bottom,0px));z-index:17;background:#fff;color:#10222b;padding:10px 16px;border-radius:99px;font-weight:700;text-shadow:none;box-shadow:0 3px 14px rgba(0,0,0,.4)}
+.fsb{width:40px;height:40px;background:#fff;color:#10222b;border:2px solid rgba(0,0,0,.35);border-radius:6px;font-size:22px;line-height:1;cursor:pointer;padding:0;text-shadow:none}
+.mapc.fs{position:fixed;inset:0;z-index:12;margin:0;border-radius:0;padding:0;border:0;background:#10222b}
+.mapc.fs #map{height:100%;border-radius:0}
+.mapc.fs #mst{position:absolute;left:8px;bottom:calc(8px + env(safe-area-inset-bottom,0px));right:150px;z-index:1000;background:rgba(0,0,0,.65);color:#fff;padding:4px 8px;border-radius:8px;margin:0}
+.mapc.fs .leaflet-top{margin-top:env(safe-area-inset-top,0px)}
+body.nofs{overflow:hidden}
 [hidden]{display:none!important}
 </style>
 </head>
@@ -394,6 +400,20 @@ $("rok").onclick=function(){
  if($("rgps").checked&&navigator.geolocation){$("rmsg").textContent="Recherche de votre position…";
   navigator.geolocation.getCurrentPosition(function(p){rGo(p.coords)},function(){$("rmsg").textContent="Position GPS refusée : décochez la case pour signaler par station."},{enableHighAccuracy:true,timeout:10000})}
  else rGo(null)};
+
+/* === Carte en plein écran === */
+(function(){
+ if(!MAP)return;var card=$("map").parentNode,btn=null;
+ function setFs(on){card.classList.toggle("fs",on);document.body.classList.toggle("nofs",on);
+  if(btn){btn.textContent=on?"✕":"⛶";btn.setAttribute("aria-label",on?"Quitter le plein écran":"Carte en plein écran");btn.title=btn.getAttribute("aria-label")}
+  if(!on)window.scrollTo(0,card.getBoundingClientRect().top+window.scrollY-60);
+  setTimeout(function(){MAP.invalidateSize()},50)}
+ var Ctl=LF.Control.extend({options:{position:"topright"},onAdd:function(){
+  btn=LF.DomUtil.create("button","fsb");btn.type="button";btn.textContent="⛶";btn.setAttribute("aria-label","Carte en plein écran");btn.title="Carte en plein écran";
+  LF.DomEvent.disableClickPropagation(btn);btn.onclick=function(){setFs(!card.classList.contains("fs"))};return btn}});
+ new Ctl().addTo(MAP);
+ document.addEventListener("keydown",function(e){if(e.key==="Escape"&&card.classList.contains("fs"))setFs(false)});
+})();
 (function(){var I=$("intro"),v=$("iv"),b=$("snd"),done=false;
  function end(){if(done)return;done=true;I.classList.add("out");setTimeout(function(){v.pause();I.remove()},650)}
  v.addEventListener("ended",end);v.addEventListener("error",end);
