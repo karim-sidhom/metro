@@ -292,12 +292,16 @@ function nn(x){return norm(x||"").replace(/[^a-z0-9]+/g," ").trim()}
 function initMap(){
  if(!LF){$("mst").textContent="Carte indisponible : la bibliothèque de carte n'a pas pu se charger.";return}
  MAP=LF.map("map").setView([36.81,10.18],12);
- LF.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:19,attribution:"© OpenStreetMap"}).addTo(MAP);
+ var sat=LF.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",{maxZoom:19,attribution:"Imagerie © Esri, Maxar, Earthstar Geographics"}),
+ lab=LF.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}",{maxZoom:19}),
+ plan=LF.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:19,attribution:"© OpenStreetMap"});
+ sat.addTo(MAP);lab.addTo(MAP);
+ LF.control.layers({"Satellite":sat,"Plan":plan},{"Noms de lieux":lab},{collapsed:true}).addTo(MAP);
  var c=null;try{c=JSON.parse(localStorage.getItem("mtOSM")||"null")}catch(e){}
- if(c&&c.d&&Date.now()-c.t<7*864e5){drawOSM(c.d);return}
+ if(c&&c.d&&c.d.elements&&c.d.elements.length){drawOSM(c.d);return}
  fetch("https://overpass-api.de/api/interpreter",{method:"POST",body:"data="+encodeURIComponent(OQ)})
   .then(function(r){if(!r.ok)throw 0;return r.json()})
-  .then(function(d){try{localStorage.setItem("mtOSM",JSON.stringify({t:Date.now(),d:d}))}catch(e){}drawOSM(d)})
+  .then(function(d){if(d&&d.elements&&d.elements.length){try{localStorage.setItem("mtOSM",JSON.stringify({t:Date.now(),d:d}))}catch(e){}}drawOSM(d)})
   .catch(function(){if(c&&c.d)drawOSM(c.d);else $("mst").textContent="Tracés indisponibles : impossible de joindre OpenStreetMap. Réessayez avec une connexion."})}
 function drawOSM(d){
  var ways=window.WAYS={},nodes=[];
@@ -309,13 +313,14 @@ function drawOSM(d){
   if(!f)nodes.some(function(n){return n.v.some(function(v){if(v.length>3&&(v.indexOf(k)>-1||k.indexOf(v)>-1)){f=n;return true}})});
   if(f)ST[s]=f.p});
  var miss=[],all=[];
+ Object.keys(C).forEach(function(l){(ways[l]||[]).forEach(function(w){LF.polyline(w,{color:"#000",weight:10,opacity:.55,interactive:false}).addTo(MAP)})});
  Object.keys(C).forEach(function(l){LG[l]=LF.layerGroup().addTo(MAP);
   if(!ways[l]){miss.push(l);return}
   ways[l].forEach(function(w){LF.polyline(w,{color:C[l],weight:5,opacity:.9}).addTo(LG[l]);all=all.concat(w)})});
  names.forEach(function(s){if(!ST[s])return;
   LF.circleMarker(ST[s],{radius:4,color:"#10222b",weight:2,fillColor:"#fff",fillOpacity:1}).bindTooltip(s).addTo(MAP)});
  if(all.length)MAP.fitBounds(all);
- $("mst").textContent="Tracés réels : © OpenStreetMap"+(miss.length?" · ligne"+(miss.length>1?"s ":" ")+miss.join(", ")+" absente"+(miss.length>1?"s":"")+" des données":"");
+ $("mst").textContent="Tracé de la voie : OpenStreetMap, enregistré sur cet appareil"+(miss.length?" · ligne"+(miss.length>1?"s ":" ")+miss.join(", ")+" absente"+(miss.length>1?"s":"")+" des données":"");
  hiMap()}
 function hiMap(){
  if(!MAP||!Object.keys(LG).length||!lastSegs)return;
