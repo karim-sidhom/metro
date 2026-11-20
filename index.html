@@ -84,7 +84,10 @@ body{text-shadow:0 1px 3px rgba(0,0,0,.75)}input::placeholder{color:rgba(255,255
 #intro{position:fixed;inset:0;z-index:20;background:#000;transition:opacity .6s}#intro.out{opacity:0;pointer-events:none}
 #iv{width:100%;height:100%;object-fit:cover;display:block}
 #snd{position:absolute;left:calc(16px + env(safe-area-inset-left,0px));bottom:calc(16px + env(safe-area-inset-bottom,0px));width:52px;height:52px;border-radius:50%;border:1px solid rgba(255,255,255,.55);background:rgba(0,0,0,.4);color:#fff;font-size:1.4rem;cursor:pointer;text-shadow:none}
-.tr{width:28px;height:28px;border-radius:50%;border:3px solid #fff;color:#fff;font-weight:800;font-size:13px;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 5px rgba(0,0,0,.55);text-shadow:none}
+.mtw{background:none;border:0}
+.mt{width:64px;display:flex;flex-direction:column;align-items:center;transform:scale(var(--ts,1));transform-origin:50% 75%;filter:drop-shadow(0 2px 3px rgba(0,0,0,.6));text-shadow:none}
+.mn{min-width:22px;height:22px;padding:0 4px;border-radius:11px;border:2px solid #fff;color:#fff;font:800 13px/18px "Bricolage Grotesque",system-ui,sans-serif;text-align:center;margin-bottom:2px;box-sizing:border-box}
+.mt svg{width:64px;height:24px;display:block}
 .rp{width:30px;height:30px;border-radius:50%;background:#fff;border:4px solid;font-weight:800;font-size:13px;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 5px rgba(0,0,0,.55);text-shadow:none;position:relative}
 .rp:after{content:"👁";position:absolute;right:-9px;top:-11px;font-size:13px}
 #rbtn{position:fixed;right:calc(14px + env(safe-area-inset-right,0px));bottom:calc(14px + env(safe-area-inset-bottom,0px));z-index:15;border:0;border-radius:99px;padding:13px 18px;background:#3ecf9f;color:#06241a;font:inherit;font-weight:800;cursor:pointer;box-shadow:0 3px 14px rgba(0,0,0,.5);text-shadow:none}
@@ -297,7 +300,7 @@ function initMap(){
   .then(function(d){try{localStorage.setItem("mtOSM",JSON.stringify({t:Date.now(),d:d}))}catch(e){}drawOSM(d)})
   .catch(function(){if(c&&c.d)drawOSM(c.d);else $("mst").textContent="Tracés indisponibles : impossible de joindre OpenStreetMap. Réessayez avec une connexion."})}
 function drawOSM(d){
- var ways={},nodes=[];
+ var ways=window.WAYS={},nodes=[];
  (d.elements||[]).forEach(function(e){
   if(e.type==="relation"&&e.tags&&C[e.tags.ref])(e.members||[]).forEach(function(m){if(m.type==="way"&&m.geometry)(ways[e.tags.ref]=ways[e.tags.ref]||[]).push(m.geometry.map(function(p){return [p.lat,p.lon]}))});
   if(e.type==="node"&&e.tags)nodes.push({v:[e.tags["name:fr"],e.tags.name,e.tags["name:en"]].filter(Boolean).map(nn),p:[e.lat,e.lon]})});
@@ -333,20 +336,48 @@ function trPts(l){var s=L[l],pts=s.map(function(n){return ST[n]||null}),c=0;pts.
   for(var j=i-1;j>=0;j--)if(pts[j]){a=j;break}for(var j=i+1;j<s.length;j++)if(pts[j]){b=j;break}
   if(a===null)return pts[b];if(b===null)return pts[a];var f=(i-a)/(b-a);
   return [pts[a][0]+(pts[b][0]-pts[a][0])*f,pts[a][1]+(pts[b][1]-pts[a][1])*f]})}
-var TPC={};
+var TPC={},TG={},TPA={};
+var TSVG='<svg viewBox="0 0 64 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><line x1="0" y1="23" x2="64" y2="23" stroke="#555" stroke-width="1.2"/><path d="M28 3 L32 0 L36 3" fill="none" stroke="#222" stroke-width="1.2"/><path d="M2 19V9Q2 3 9 3H52Q59 3 62 9L63 16V19Z" fill="#12994a"/><rect x="8" y="2" width="44" height="2" rx="1" fill="#0b6b35"/><rect x="2" y="14" width="61" height="3" fill="#fff"/><g fill="#bfe3f2"><rect x="4" y="6" width="8.5" height="6" rx="1"/><rect x="16" y="6" width="8.5" height="6" rx="1"/><rect x="27" y="6" width="8.5" height="6" rx="1"/><rect x="38" y="6" width="8.5" height="6" rx="1"/></g><rect x="49" y="6" width="4" height="8" fill="#0b6b35"/><path d="M55 6H59Q61 8 62 12H55Z" fill="#1d3b4a"/><g stroke="#0a4d27" stroke-width=".8"><line x1="14" y1="3" x2="14" y2="19"/><line x1="25.5" y1="3" x2="25.5" y2="19"/><line x1="36.5" y1="3" x2="36.5" y2="19"/><line x1="48" y1="3" x2="48" y2="19"/></g><g fill="#222"><circle cx="9" cy="20" r="2.4"/><circle cx="22" cy="20" r="2.4"/><circle cx="42" cy="20" r="2.4"/><circle cx="56" cy="20" r="2.4"/></g><circle cx="62" cy="14" r="1.2" fill="#ffe27a"/></svg>';
+function dd(a,b){return Math.hypot(a[0]-b[0],(a[1]-b[1])*.8)}
+function tg(l){if(TG[l])return TG[l];var id={},N=[],A=[];
+ function nid(p){var k=p[0].toFixed(5)+","+p[1].toFixed(5);if(id[k]===undefined){id[k]=N.length;N.push(p);A.push([])}return id[k]}
+ ((window.WAYS||{})[l]||[]).forEach(function(w){for(var i=1;i<w.length;i++){var a=nid(w[i-1]),b=nid(w[i]),d=dd(N[a],N[b]);A[a].push([b,d]);A[b].push([a,d])}});
+ return TG[l]={N:N,A:A}}
+function snap(g,p){var b=0,m=1e9;g.N.forEach(function(q,i){var d=dd(q,p);if(d<m){m=d;b=i}});return b}
+function hpu(h,x){h.push(x);var i=h.length-1;while(i>0){var p=(i-1)>>1;if(h[p][0]<=h[i][0])break;var t=h[p];h[p]=h[i];h[i]=t;i=p}}
+function hpo(h){var t=h[0],l=h.pop();if(h.length){h[0]=l;var i=0;for(;;){var a=2*i+1,b=a+1,m=i;if(a<h.length&&h[a][0]<h[m][0])m=a;if(b<h.length&&h[b][0]<h[m][0])m=b;if(m===i)break;var x=h[m];h[m]=h[i];h[i]=x;i=m}}return t}
+function trk(l,a,b){var k=l+"|"+a+"|"+b;if(TPA[k])return TPA[k];
+ var A0=ST[a],B0=ST[b],pts=null,g=tg(l);
+ if(g.N.length>1){var s=snap(g,A0),e=snap(g,B0),D=[],pv=[],h=[];
+  for(var i=0;i<g.N.length;i++)D.push(1e9);D[s]=0;hpu(h,[0,s]);
+  while(h.length){var c=hpo(h),u=c[1];if(c[0]>D[u])continue;if(u===e)break;
+   g.A[u].forEach(function(ed){var nd=c[0]+ed[1];if(nd<D[ed[0]]){D[ed[0]]=nd;pv[ed[0]]=u;hpu(h,[nd,ed[0]])}})}
+  if(D[e]<1e9&&D[e]<=3*dd(A0,B0)+.004){pts=[];for(var q=e;q!==undefined;q=pv[q])pts.unshift(g.N[q])}}
+ if(!pts||pts.length<2)pts=[A0,B0];
+ var cum=[0];for(var j=1;j<pts.length;j++)cum.push(cum[j-1]+dd(pts[j-1],pts[j]));
+ return TPA[k]={p:pts,c:cum,L:cum[cum.length-1]}}
+function atTk(t,f){var x=f*t.L,i=1;while(i<t.c.length-1&&t.c[i]<x)i++;
+ var a=t.p[i-1],b=t.p[i],sg=t.c[i]-t.c[i-1],r=sg>0?Math.min(Math.max((x-t.c[i-1])/sg,0),1):0;
+ return {ll:[a[0]+(b[0]-a[0])*r,a[1]+(b[1]-a[1])*r],dx:b[1]-a[1]}}
+function trIcon(l){return LF.divIcon({className:"mtw",html:'<div class="mt"><div class="mn" style="background:'+C[l]+'">'+l+'</div>'+TSVG+'</div>',iconSize:[64,48],iconAnchor:[32,36]})}
+function zs(){var z=MAP.getZoom();MAP.getContainer().style.setProperty("--ts",z<=11?.6:z===12?.78:z===13?.92:z>=15?1.3:1)}
 function trTick(){
  if(!MAP||!Object.keys(ST).length)return;
+ if(!window.__zs){window.__zs=1;MAP.on("zoomend",zs);zs()}
  var n=new Date(),m=n.getHours()*60+n.getMinutes()+n.getSeconds()/60,day=n.getDay()===0?"dim":"sem",seen={},tot=0;
  TRN.forEach(function(t){
   if(t.day!==day)return;
   var dur=(t.st.length-1)*GAP,e=m-t.dep;if(e<0)e=m+1440-t.dep;if(e<0||e>dur)return;
   var P=TPC[t.l]===undefined?(TPC[t.l]=trPts(t.l)):TPC[t.l];if(!P)return;
-  var x=e/GAP,i=Math.min(Math.floor(x),t.st.length-2),f=Math.min(x-i,1);
-  var a=P[L[t.l].indexOf(t.st[i])],b=P[L[t.l].indexOf(t.st[i+1])],ll=[a[0]+(b[0]-a[0])*f,a[1]+(b[1]-a[1])*f];
-  var tip="Ligne "+t.l+" vers "+t.st[t.st.length-1]+" · départ "+hh(t.dep)+" · prochain arrêt : "+t.st[i+1];
+  var x=e/GAP,i=Math.min(Math.floor(x),t.st.length-2),f=Math.min(x-i,1),sa=t.st[i],sb=t.st[i+1],pos;
+  if(ST[sa]&&ST[sb])pos=atTk(trk(t.l,sa,sb),f);
+  else{var a=P[L[t.l].indexOf(sa)],b=P[L[t.l].indexOf(sb)];pos={ll:[a[0]+(b[0]-a[0])*f,a[1]+(b[1]-a[1])*f],dx:b[1]-a[1]}}
+  var tip="Ligne "+t.l+" vers "+t.st[t.st.length-1]+" · départ "+hh(t.dep)+" · prochain arrêt : "+sb;
   seen[t.id]=1;tot++;var o=TMK[t.id];
-  if(!o){o=TMK[t.id]=LF.marker(ll,{keyboard:false,zIndexOffset:500,icon:LF.divIcon({className:"",html:'<div class="tr" style="background:'+C[t.l]+'">'+t.l+'</div>',iconSize:[28,28],iconAnchor:[14,14]})}).bindTooltip(tip).addTo(MAP)}
-  else{o.setLatLng(ll);o.setTooltipContent(tip)}});
+  if(!o){o=TMK[t.id]=LF.marker(pos.ll,{keyboard:false,zIndexOffset:500,icon:trIcon(t.l)}).bindTooltip(tip,{direction:"bottom",offset:[0,10]}).addTo(MAP)}
+  else{o.setLatLng(pos.ll);o.setTooltipContent(tip)}
+  var fl=pos.dx<-1e-7?-1:pos.dx>1e-7?1:(o._fl||1);
+  if(o._fl!==fl){o._fl=fl;var el=o.getElement(),sv=el&&el.querySelector("svg");if(sv)sv.style.transform=fl<0?"scaleX(-1)":""}});
  Object.keys(TMK).forEach(function(k){if(!seen[k]){MAP.removeLayer(TMK[k]);delete TMK[k]}});
  var base=$("mst").dataset.b;if(base===undefined){base=$("mst").dataset.b=$("mst").textContent}
  $("mst").textContent=base+" · "+tot+" métro"+(tot>1?"s":"")+" en circulation (positions estimées)"}
